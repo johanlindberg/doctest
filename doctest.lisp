@@ -13,10 +13,19 @@
    Here is the simplest possible example:
    >>> 1 ; You can use comments to clarify
    1
+
+   And here is one with more than one return value.
+   >>> (values 1 2)
+   1
+   2
    
    Note that newlines and other whitespace (including comments) doesn't
    particularly matter. We could have added the test >>> 1 1 more or less
    anywhere within the docstring.
+
+   Another thing to keep in mind is that results are only compared against as
+   many forms as it returns, so this test: >>> (values 1 2) 1 2 3 will pass (3
+   is considered text and is ignored).
 
    Here is a slightly more complicated example:
    >>> (defun foo (x)
