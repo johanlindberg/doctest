@@ -2,7 +2,7 @@ Doctests for Lisp
 
 CL-USER> (test-function #'test-function :output t)
 
-Results for #'TEST-FUNCTION: 0 of 8 failed.
+Results for #'TEST-FUNCTION: 0 of 10 failed.
 0
-8
+10
 CL-USER> 

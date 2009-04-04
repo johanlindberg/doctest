@@ -24,8 +24,13 @@
    anywhere within the docstring.
 
    Another thing to keep in mind is that results are only compared against as
-   many forms as it returns, so this test: >>> (values 1 2) 1 2 3 will pass (3
-   is considered text and is ignored).
+   many forms as it returns, so this test:
+   >>> (values 1 2)
+   1
+   2
+   3
+
+   will pass because 3 is considered text and ignored.
 
    Here is a slightly more complicated example:
    >>> (defun foo (x)
