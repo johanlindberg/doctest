@@ -1,0 +1,8 @@
+Doctests for Lisp
+
+CL-USER> (test-function #'test-function :output t)
+
+Results for #'TEST-FUNCTION: 0 of 8 failed.
+0
+8
+CL-USER> 
