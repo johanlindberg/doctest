@@ -1,8 +1,15 @@
 Doctests for Lisp
 
-CL-USER> (test-function #'test-function :output t)
+; SLIME 2008-09-22
+CL-USER> 
+;;;; Compile file /Users/johanlindberg/Projects/doctest/doctest.l ...
+;Compiling "/Users/johanlindberg/Projects/doctest/doctest.lisp"...
+;Loading #P"/Users/johanlindberg/Projects/doctest/doctest.dx64fsl"...
+CL-USER> (use-package :doctest)
+T
+CL-USER> (test-function #'test-function :output-stream T)
 
-Results for #'TEST-FUNCTION: 0 of 10 failed.
+Results for TEST-FUNCTION (FUNCTION): 0 of 8 failed.
 0
-10
+8
 CL-USER> 
