@@ -7,9 +7,91 @@ CL-USER>
 ;Loading #P"/Users/johanlindberg/Projects/doctest/doctest.dx64fsl"...
 CL-USER> (use-package :doctest)
 T
-CL-USER> (test-function #'test-function :output-stream T)
+CL-USER> (documentation #'test-file 'function)
+"Test-file extracts and tests code snippets in the contents of <filename>. It
+   returns the number of tests passed and failed and prints a description to
+   <output>.
 
-Results for TEST-FUNCTION (FUNCTION): 0 of 8 failed.
+   See also documentation for test-function."
+CL-USER> (documentation #'test-function 'function)
+"Test-function extracts and tests code snippets embedded in the documentation
+   string of <function>. It returns the number of tests passed and failed and
+   prints a description to <output>.
+
+   In order to have a code snippet evaluated as a doctest it must be preceded by
+   two '>' characters followed by whitespace. That combination will cause the
+   next form to be read and evaluated, and the next or the two next forms after
+   that to be read (but not evaluated).
+
+   Here is the simplest possible example:
+   >> 1 ; NOTE! You can use comments to clarify!
+   1
+
+   If you excpect more than one value you should wrap it in a multiple-value-
+   list to create one form.
+
+   >> (multiple-value-list (values 1 2))
+   (1 2)
+
+   NOTE! Newlines and other whitespace (including comments) doesn't particularly
+   matter. We could just as well have written >> (multiple-value-list (values 1
+   2)) (1 2) instead.
+
+   If you test a function that doesn't have a documentation string, test-
+   function will return NIL.
+   >> (defun sqr (x)
+        (* x x))
+   SQR
+   >> (test-function #'sqr)
+   NIL
+
+   If you need to test that a function signals a condition for certain inputs
+   you can use the name of the condition as the expected return value.
+   >> (sqr 'x)
+   TYPE-ERROR
+
+   If we add a documentation string for sqr with a doctest, we can verify that
+   tests can fail as well.
+   >> (defun sqr (x)
+        \"Returns <x> squared.
+
+          This test will fail:
+          >> (sqr 3) 3\"
+        (* x x))
+   SQR
+
+   Testing sqr with test-function should now return 1 and 0.
+   >> (multiple-value-list (test-function #'sqr))
+   (1 0)
+
+   If you need to test the output of a function as well you can add an
+   expected-output form between the function call and the return value.
+   >> (defun sqr (x)
+        \"Prints <x> and <x> squared to standard out and returns NIL.
+
+          This test will pass,
+          >> (sqr 2)
+          (expected-output |You say 2, I say 4|)
+          NIL
+
+          as will this (because it ignores the output).
+          >> (sqr 2)
+          NIL
+
+          This test will fail because expected output doesn't match the
+          actual output.
+          >> (sqr 2)
+          (expected-output |Blah blah blah|)
+          NIL\"
+        (format t \"You say ~A, I say ~A\" x (* x x)))
+   SQR
+
+   Testing sqr with test-function should now return 1 and 2.
+   >> (multiple-value-list (test-function #'sqr))
+   (1 2)"
+CL-USER> (test-function #'test-function :output T)
+
+Results for TEST-FUNCTION (FUNCTION): 0 of 10 failed.
 0
-8
+10
 CL-USER> 

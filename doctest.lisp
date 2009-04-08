@@ -18,6 +18,8 @@
    work. It returns the number of tests failed and passed and prints to
    <output>."
 
+  ;; TODO: Needs refactoring. Break this up into two methods (at least), one for
+  ;; setting up/finding tests and one for executing them.
   (let ((tests-passed 0)
 	(tests-failed 0))
     (when docstring
@@ -49,6 +51,7 @@
 							co))))))
 		  (unless expected-output
 		    (setf test-output '()))
+
 		  (if test-form-signaled-condition
 		      (if (typep (car test-result) (car expected-result))
 			  (incf tests-passed)
@@ -66,15 +69,15 @@
 				(format output "~&~A printed \"~A\", expected \"~A\".~%" test-form test-output expected-output))))))))))))
     (values tests-failed tests-passed)))
 
-(defun test-function (function &key (output-stream nil))
+(defun test-function (function &key (output nil))
   "Test-function extracts and tests code snippets embedded in the documentation
    string of <function>. It returns the number of tests passed and failed and
-   prints a description to <output-stream>.
+   prints a description to <output>.
 
    In order to have a code snippet evaluated as a doctest it must be preceded by
    two '>' characters followed by whitespace. That combination will cause the
-   next form to be read and evaluated, and the next form after that to be read
-   (but not evaluated).
+   next form to be read and evaluated, and the next or the two next forms after
+   that to be read (but not evaluated).
 
    Here is the simplest possible example:
    >> 1 ; NOTE! You can use comments to clarify!
@@ -117,36 +120,51 @@
    >> (multiple-value-list (test-function #'sqr))
    (1 0)
 
+   If you need to test the output of a function as well you can add an
+   expected-output form between the function call and the return value.
    >> (defun sqr (x)
-        \"Prints <x> squared to standard out. Returns NIL.
+        \"Prints <x> and <x> squared to standard out and returns NIL.
 
+          This test will pass,
           >> (sqr 2)
           (expected-output |You say 2, I say 4|)
+          NIL
+
+          as will this (because it ignores the output).
+          >> (sqr 2)
+          NIL
+
+          This test will fail because expected output doesn't match the
+          actual output.
+          >> (sqr 2)
+          (expected-output |Blah blah blah|)
           NIL\"
         (format t \"You say ~A, I say ~A\" x (* x x)))
    SQR
 
-   Testing sqr with test-function should now return 0 and 1.
+   Testing sqr with test-function should now return 1 and 2.
    >> (multiple-value-list (test-function #'sqr))
-   (0 1)"
+   (1 2)"
 
   (when (documentation function 'function)
     (let ((function-name (third (multiple-value-list (function-lambda-expression function)))))
       (multiple-value-bind (tests-failed tests-passed)
 	  (with-input-from-string (docstring (documentation function 'function))
-	    (run-doctests docstring output-stream))
-	(print-results function-name 'function output-stream tests-failed tests-passed)))))
+	    (run-doctests docstring output))
+	(print-results function-name 'function output tests-failed tests-passed)))))
 
-(defun test-file (filename &key (output-stream nil))
-  "test-file extracts and tests code snippets in the contents of <function>. It
+(defun test-file (filename &key (output nil))
+  "Test-file extracts and tests code snippets in the contents of <filename>. It
    returns the number of tests passed and failed and prints a description to
-   <output-stream>."
+   <output>.
+
+   See also documentation for test-function."
 
     (multiple-value-bind (tests-failed tests-passed)
 	(with-open-file (docstring filename :direction :input)
-	  (run-doctests docstring output-stream))
-      (print-results filename 'file output-stream tests-failed tests-passed)))
+	  (run-doctests docstring output))
+      (print-results filename 'file output tests-failed tests-passed)))
 
-(defun print-results (test-name test-type output-stream tests-failed tests-passed)
-  (format output-stream "~&Results for ~A (~A): ~D of ~D failed.~%" test-name test-type tests-failed (+ tests-failed tests-passed))
+(defun print-results (test-name test-type output tests-failed tests-passed)
+  (format output "~&Results for ~A (~A): ~D of ~D failed.~%" test-name test-type tests-failed (+ tests-failed tests-passed))
   (values tests-failed tests-passed))
