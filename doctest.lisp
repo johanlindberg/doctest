@@ -27,27 +27,43 @@
 	(when (and (equal #\> c)
 		   (equal #\> (read-char docstring))
 		   (whitespace-p (peek-char nil docstring)))
-	  (let* ((signaled-condition 'nil)
-		 (test-form (read docstring))
-		 (expected-results (list (read docstring)))
-		 (test-results (multiple-value-list
-				(handler-case (eval test-form)
-				  (condition (co) (progn
-						    (setf signaled-condition t)
-						    co))))))
-	    (if signaled-condition
-		(let ((test-condition (first test-results))
-		      (expected-condition (first expected-results)))
-		  (if (typep test-condition expected-condition)
-		      (incf tests-passed)
-		      (progn
-			(incf tests-failed)
-			(format output "~&~A signaled ~A, expected ~A.~%" test-form test-condition expected-condition))))
-		(if (equal test-results expected-results)
-		    (incf tests-passed)
-		    (progn
-		      (incf tests-failed)
-		      (format output "~&~A returned~{ ~A~}, expected~{ ~A~}.~%" test-form test-results expected-results))))))))
+	  (let ((test-form-signaled-condition 'nil)
+		(test-form (read docstring)))
+	    (let ((expected-result (list (read docstring))))
+	      (let ((test-output (make-array '(0)
+					     :element-type 'base-char
+					     :fill-pointer 0
+					     :adjustable t))
+		    (expected-output '()))
+		(when (and (consp (car expected-result))
+			   (symbolp (caar expected-result))
+			   (string-equal (symbol-name (caar expected-result)) "expected-output"))
+		  (setf expected-output (cadar expected-result))
+		  (setf expected-result (list (read docstring))))
+
+		(let ((test-result (multiple-value-list
+				    (handler-case (with-output-to-string (*standard-output* test-output)
+						    (eval test-form))
+				      (condition (co) (progn
+							(setf test-form-signaled-condition t)
+							co))))))
+		  (unless expected-output
+		    (setf test-output '()))
+		  (if test-form-signaled-condition
+		      (if (typep (car test-result) (car expected-result))
+			  (incf tests-passed)
+			  (progn
+			    (incf tests-failed)
+			    (format output "~&~A signaled ~A, expected ~A.~%" test-form (car test-result) (car expected-result))))
+
+		      (if (and (equal test-result expected-result)
+			       (string-equal test-output expected-output))
+			  (incf tests-passed)
+			  (progn
+			    (incf tests-failed)
+			    (if (equal test-output expected-output)
+				(format output "~&~A returned~{ ~A~}, expected~{ ~A~}.~%" test-form test-result expected-result)
+				(format output "~&~A printed \"~A\", expected \"~A\".~%" test-form test-output expected-output))))))))))))
     (values tests-failed tests-passed)))
 
 (defun test-function (function &key (output-stream nil))
@@ -85,10 +101,10 @@
    If you need to test that a function signals a condition for certain inputs
    you can use the name of the condition as the expected return value.
    >> (sqr 'x)
-   type-error
+   TYPE-ERROR
 
-   If we add a documentation string for sqr with some doctests, we can verify
-   that tests can fail as well.
+   If we add a documentation string for sqr with a doctest, we can verify that
+   tests can fail as well.
    >> (defun sqr (x)
         \"Returns <x> squared.
 
@@ -97,9 +113,22 @@
         (* x x))
    SQR
 
-   Testing foo with test-function should now return 1 and 0.
+   Testing sqr with test-function should now return 1 and 0.
    >> (multiple-value-list (test-function #'sqr))
-   (1 0)"
+   (1 0)
+
+   >> (defun sqr (x)
+        \"Prints <x> squared to standard out. Returns NIL.
+
+          >> (sqr 2)
+          (expected-output |You say 2, I say 4|)
+          NIL\"
+        (format t \"You say ~A, I say ~A\" x (* x x)))
+   SQR
+
+   Testing sqr with test-function should now return 0 and 1.
+   >> (multiple-value-list (test-function #'sqr))
+   (0 1)"
 
   (when (documentation function 'function)
     (let ((function-name (third (multiple-value-list (function-lambda-expression function)))))
@@ -121,4 +150,3 @@
 (defun print-results (test-name test-type output-stream tests-failed tests-passed)
   (format output-stream "~&Results for ~A (~A): ~D of ~D failed.~%" test-name test-type tests-failed (+ tests-failed tests-passed))
   (values tests-failed tests-passed))
-
