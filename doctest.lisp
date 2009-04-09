@@ -1,7 +1,21 @@
-;;; doctest
+;;; Doctest for Lisp.
+;;; Copyright (C) 2009 Johan Lindberg, Pulp Software
+
+;;; This program is free software: you can redistribute it and/or modify
+;;; it under the terms of the GNU General Public License as published by
+;;; the Free Software Foundation, either version 3 of the License, or
+;;; (at your option) any later version.
+
+;;; This program is distributed in the hope that it will be useful,
+;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;; GNU General Public License for more details.
+
+;;; You should have received a copy of the GNU General Public License
+;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 (defpackage :doctest
-  (:use :cl)
+  (:use :common-lisp)
   (:export :test-file
 	   :test-function))
 (in-package :doctest)
@@ -18,7 +32,7 @@
    work. It returns the number of tests failed and passed and prints to
    <output>."
 
-  ;; TODO: Needs refactoring. Break this up into two methods (at least), one for
+  ;; TODO: Needs refactoring! Break this up into two methods (at least), one for
   ;; setting up/finding tests and one for executing them.
   (let ((tests-passed 0)
 	(tests-failed 0))
@@ -71,7 +85,7 @@
 
 (defun test-function (function &key (output nil))
   "Test-function extracts and tests code snippets embedded in the documentation
-   string of <function>. It returns the number of tests passed and failed and
+   string of <function>. It returns the number of tests failed and passed and
    prints a description to <output>.
 
    In order to have a code snippet evaluated as a doctest it must be preceded by
@@ -116,21 +130,21 @@
         (* x x))
    SQR
 
-   Testing sqr with test-function should now return 1 and 0.
+   Testing sqr with test-function should now return 1 failed and 0 passed.
    >> (multiple-value-list (test-function #'sqr))
    (1 0)
 
-   If you need to test the output of a function as well you can add an
-   expected-output form between the function call and the return value.
+   If you need to test the output of a function you can add an expected-
+   output form *between* the function call and the return value.
    >> (defun sqr (x)
-        \"Prints <x> and <x> squared to standard out and returns NIL.
+        \"Prints <x> and <x>*<x> to standard output and returns NIL.
 
           This test will pass,
           >> (sqr 2)
           (expected-output |You say 2, I say 4|)
           NIL
 
-          as will this (because it ignores the output).
+          as will this, because it ignores the output.
           >> (sqr 2)
           NIL
 
@@ -142,7 +156,7 @@
         (format t \"You say ~A, I say ~A\" x (* x x)))
    SQR
 
-   Testing sqr with test-function should now return 1 and 2.
+   Testing sqr with test-function should now return 1 failed and 2 passed.
    >> (multiple-value-list (test-function #'sqr))
    (1 2)"
 
@@ -155,10 +169,10 @@
 
 (defun test-file (filename &key (output nil))
   "Test-file extracts and tests code snippets in the contents of <filename>. It
-   returns the number of tests passed and failed and prints a description to
+   returns the number of tests failed and passed and prints a description to
    <output>.
 
-   See also documentation for test-function."
+   See also the documentation string for test-function."
 
     (multiple-value-bind (tests-failed tests-passed)
 	(with-open-file (docstring filename :direction :input)
