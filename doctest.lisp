@@ -1,4 +1,4 @@
-;;; Doctest for Lisp.
+;;; Doctests for Common Lisp.
 ;;; Copyright (C) 2009 Johan Lindberg, Pulp Software
 
 ;;; This program is free software: you can redistribute it and/or modify
