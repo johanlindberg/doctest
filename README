@@ -7,15 +7,9 @@ CL-USER>
 ;Loading #P"/Users/johanlindberg/Projects/doctest/doctest.dx64fsl"...
 CL-USER> (use-package :doctest)
 T
-CL-USER> (documentation #'test-file 'function)
-"Test-file extracts and tests code snippets in the contents of <filename>. It
-   returns the number of tests passed and failed and prints a description to
-   <output>.
-
-   See also documentation for test-function."
 CL-USER> (documentation #'test-function 'function)
 "Test-function extracts and tests code snippets embedded in the documentation
-   string of <function>. It returns the number of tests passed and failed and
+   string of <function>. It returns the number of tests failed and passed and
    prints a description to <output>.
 
    In order to have a code snippet evaluated as a doctest it must be preceded by
@@ -60,21 +54,23 @@ CL-USER> (documentation #'test-function 'function)
         (* x x))
    SQR
 
-   Testing sqr with test-function should now return 1 and 0.
+   Testing sqr with test-function should now return 1 failed and 0 passed.
    >> (multiple-value-list (test-function #'sqr))
    (1 0)
 
-   If you need to test the output of a function as well you can add an
-   expected-output form between the function call and the return value.
+   If you need to test the output of a function you can add an expected-
+   output form *between* the function call and the return value. It must
+   consist of two atoms so you should either use a string or wrap the expected
+   output in '|' characters.
    >> (defun sqr (x)
-        \"Prints <x> and <x> squared to standard out and returns NIL.
+        \"Prints <x> and <x>*<x> to standard output and returns NIL.
 
           This test will pass,
           >> (sqr 2)
-          (expected-output |You say 2, I say 4|)
+          (expected-output |2 * 2 = 4|)
           NIL
 
-          as will this (because it ignores the output).
+          as will this, because it ignores the output.
           >> (sqr 2)
           NIL
 
@@ -83,11 +79,19 @@ CL-USER> (documentation #'test-function 'function)
           >> (sqr 2)
           (expected-output |Blah blah blah|)
           NIL\"
-        (format t \"You say ~A, I say ~A\" x (* x x)))
+        (format t \"~A * ~A = ~A\" x x (* x x)))
    SQR
 
-   Testing sqr with test-function should now return 1 and 2.
-   >> (multiple-value-list (test-function #'sqr))
+   Testing sqr with test-function should now return 1 failed and 2 passed. It
+   should also inform us that:
+
+   (SQR 2) printed \"2 * 2 = 4\", expected \"Blah blah blah\".
+   Results for SQR (FUNCTION): 1 of 3 failed.
+
+   NOTE! Whitespace is ignored when output is compared.
+
+   >> (multiple-value-list (test-function #'sqr :output T))
+   (expected-output |(SQR 2) printed \"2 * 2 = 4\", expected \"Blah blah blah\". Results for SQR (FUNCTION): 1 of 3 failed.|)
    (1 2)"
 CL-USER> (test-function #'test-function :output T)
 

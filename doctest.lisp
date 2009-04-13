@@ -27,8 +27,14 @@
       (equal #\Tab c)
       (equal #\Newline c)))
 
+(defun remove-ws (string)
+  (if (stringp string)
+      (remove-if #'whitespace-p (copy-seq string))
+      (remove-if #'whitespace-p (copy-seq (string string)))))
+    
 (defun string-equal-ignore-ws (string1 string2)
-  (string-equal string1 string2))
+  (or (equal string1 string2)
+      (string-equal (remove-ws string1) (remove-ws string2))))
 
 (defun run-doctests (docstring output)
   "Run-doctests is used by test-function and test-file to perform the actual
@@ -37,8 +43,8 @@
 
   ;; TODO: Needs refactoring! Break this up into two methods (at least), one for
   ;; setting up/finding tests and one for executing them.
-  (let ((tests-passed 0)
-	(tests-failed 0))
+  (let ((tests-failed 0)
+	(tests-passed 0))
     (when docstring
       (do ((c (read-char docstring)
 	      (read-char docstring nil 'EOF)))
@@ -49,10 +55,10 @@
 	  (let ((test-form-signaled-condition 'nil)
 		(test-form (read docstring)))
 	    (let ((expected-result (list (read docstring))))
-	      (let ((test-output (make-array '(0)
-					     :element-type 'base-char
-					     :fill-pointer 0
-					     :adjustable t))
+	      (let ((actual-output (make-array '(0)
+					       :element-type 'base-char
+					       :fill-pointer 0
+					       :adjustable t))
 		    (expected-output '()))
 		(when (and (consp (car expected-result))
 			   (symbolp (caar expected-result))
@@ -60,30 +66,32 @@
 		  (setf expected-output (cadar expected-result))
 		  (setf expected-result (list (read docstring))))
 
-		(let ((test-result (multiple-value-list
-				    (handler-case (with-output-to-string (*standard-output* test-output)
-						    (eval test-form))
-				      (condition (co) (progn
-							(setf test-form-signaled-condition t)
-							co))))))
+		(let ((actual-result (multiple-value-list
+				      (handler-case (with-output-to-string (*standard-output* actual-output)
+						      (eval test-form))
+					(condition (co) (progn
+							  (setf test-form-signaled-condition t)
+							  co))))))
 		  (unless expected-output
-		    (setf test-output '()))
+		    (setf actual-output '()))
 
-		  (if test-form-signaled-condition
-		      (if (typep (car test-result) (car expected-result))
-			  (incf tests-passed)
-			  (progn
-			    (incf tests-failed)
-			    (format output "~&~A signaled ~A, expected ~A.~%" test-form (car test-result) (car expected-result))))
-
-		      (if (and (equal test-result expected-result)
-			       (string-equal-ignore-ws test-output expected-output))
-			  (incf tests-passed)
-			  (progn
-			    (incf tests-failed)
-			    (if (string-equal-ignore-ws test-output expected-output)
-				(format output "~&~A returned~{ ~A~}, expected~{ ~A~}.~%" test-form test-result expected-result)
-				(format output "~&~A printed \"~A\", expected \"~A\".~%" test-form test-output expected-output))))))))))))
+		  (let ((expected-output-matches-actual-output
+			 (string-equal-ignore-ws actual-output expected-output)))
+		    (if test-form-signaled-condition
+			(if (typep (car actual-result) (car expected-result))
+			    (incf tests-passed)
+			    (progn
+			      (incf tests-failed)
+			      (format output "~&~A signaled ~A, expected ~A.~%" test-form (car actual-result) (car expected-result))))
+			
+			(if (and (equal actual-result expected-result)
+				 expected-output-matches-actual-output)
+			    (incf tests-passed)
+			    (progn
+			      (incf tests-failed)
+			      (if expected-output-matches-actual-output
+				  (format output "~&~A returned~{ ~A~}, expected~{ ~A~}.~%" test-form actual-result expected-result)
+				  (format output "~&~A printed \"~A\", expected \"~A\".~%" test-form actual-output expected-output)))))))))))))
     (values tests-failed tests-passed)))
 
 (defun test-function (function &key (output nil))
@@ -138,13 +146,15 @@
    (1 0)
 
    If you need to test the output of a function you can add an expected-
-   output form *between* the function call and the return value.
+   output form *between* the function call and the return value. It must
+   consist of two atoms so you should either use a string or wrap the expected
+   output in '|' characters.
    >> (defun sqr (x)
         \"Prints <x> and <x>*<x> to standard output and returns NIL.
 
           This test will pass,
           >> (sqr 2)
-          (expected-output |You say 2, I say 4|)
+          (expected-output |2 * 2 = 4|)
           NIL
 
           as will this, because it ignores the output.
@@ -156,14 +166,19 @@
           >> (sqr 2)
           (expected-output |Blah blah blah|)
           NIL\"
-        (format t \"You say ~A, I say ~A\" x (* x x)))
+        (format t \"~A * ~A = ~A\" x x (* x x)))
    SQR
 
-   Testing sqr with test-function should now return 1 failed and 2 passed.
+   Testing sqr with test-function should now return 1 failed and 2 passed. It
+   should also inform us that:
+
+   (SQR 2) printed \"2 * 2 = 4\", expected \"Blah blah blah\".
+   Results for SQR (FUNCTION): 1 of 3 failed.
+
+   NOTE! Whitespace is ignored when output is compared.
+
    >> (multiple-value-list (test-function #'sqr :output T))
-   (expected-output |(SQR 2) printed \"You say 2, I say 4\", expected \"Blah blah blah\".
-Results for SQR (FUNCTION): 1 of 3 failed.
-|)
+   (expected-output |(SQR 2) printed \"2 * 2 = 4\", expected \"Blah blah blah\". Results for SQR (FUNCTION): 1 of 3 failed.|)
    (1 2)"
 
   (when (documentation function 'function)
