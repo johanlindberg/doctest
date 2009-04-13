@@ -27,6 +27,9 @@
       (equal #\Tab c)
       (equal #\Newline c)))
 
+(defun string-equal-ignore-ws (string1 string2)
+  (string-equal string1 string2))
+
 (defun run-doctests (docstring output)
   "Run-doctests is used by test-function and test-file to perform the actual
    work. It returns the number of tests failed and passed and prints to
@@ -74,11 +77,11 @@
 			    (format output "~&~A signaled ~A, expected ~A.~%" test-form (car test-result) (car expected-result))))
 
 		      (if (and (equal test-result expected-result)
-			       (string-equal test-output expected-output))
+			       (string-equal-ignore-ws test-output expected-output))
 			  (incf tests-passed)
 			  (progn
 			    (incf tests-failed)
-			    (if (equal test-output expected-output)
+			    (if (string-equal-ignore-ws test-output expected-output)
 				(format output "~&~A returned~{ ~A~}, expected~{ ~A~}.~%" test-form test-result expected-result)
 				(format output "~&~A printed \"~A\", expected \"~A\".~%" test-form test-output expected-output))))))))))))
     (values tests-failed tests-passed)))
@@ -157,7 +160,10 @@
    SQR
 
    Testing sqr with test-function should now return 1 failed and 2 passed.
-   >> (multiple-value-list (test-function #'sqr))
+   >> (multiple-value-list (test-function #'sqr :output T))
+   (expected-output |(SQR 2) printed \"You say 2, I say 4\", expected \"Blah blah blah\".
+Results for SQR (FUNCTION): 1 of 3 failed.
+|)
    (1 2)"
 
   (when (documentation function 'function)
