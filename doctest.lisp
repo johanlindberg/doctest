@@ -28,13 +28,14 @@
       (equal #\Newline c)))
 
 (defun remove-ws (string)
+  "Return <string> (as a string) with *all* whitespace characters removed."
+
   (if (stringp string)
       (remove-if #'whitespace-p (copy-seq string))
       (remove-if #'whitespace-p (copy-seq (string string)))))
     
 (defun string-equal-ignore-ws (string1 string2)
-  (or (equal string1 string2)
-      (string-equal (remove-ws string1) (remove-ws string2))))
+  (string-equal (remove-ws string1) (remove-ws string2)))
 
 (defun run-doctests (docstring output)
   "Run-doctests is used by test-function and test-file to perform the actual
@@ -60,10 +61,9 @@
 					       :fill-pointer 0
 					       :adjustable t))
 		    (expected-output '()))
-		(when (and (consp (car expected-result))
-			   (symbolp (caar expected-result))
-			   (string-equal (symbol-name (caar expected-result)) "expected-output"))
-		  (setf expected-output (cadar expected-result))
+		(when (and (symbolp (car expected-result))
+			   (equal (string (car expected-result)) "->"))
+		  (setf expected-output (read docstring))
 		  (setf expected-result (list (read docstring))))
 
 		(let ((actual-result (multiple-value-list
@@ -154,7 +154,7 @@
 
           This test will pass,
           >> (sqr 2)
-          (expected-output |2 * 2 = 4|)
+          -> |2 * 2 = 4|
           NIL
 
           as will this, because it ignores the output.
@@ -164,7 +164,7 @@
           This test will fail because expected output doesn't match the
           actual output.
           >> (sqr 2)
-          (expected-output |Blah blah blah|)
+          -> |Blah blah blah|
           NIL\"
         (format t \"~A * ~A = ~A\" x x (* x x)))
    SQR
@@ -178,7 +178,7 @@
    NOTE! Whitespace is ignored when output is compared.
 
    >> (multiple-value-list (test-function #'sqr :output T))
-   (expected-output |(SQR 2) printed \"2 * 2 = 4\", expected \"Blah blah blah\". Results for SQR (FUNCTION): 1 of 3 failed.|)
+   -> |(SQR 2) printed \"2 * 2 = 4\", expected \"Blah blah blah\". Results for SQR (FUNCTION): 1 of 3 failed.|
    (1 2)"
 
   (when (documentation function 'function)
