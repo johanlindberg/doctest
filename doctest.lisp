@@ -37,13 +37,36 @@
 (defun string-equal-ignore-ws (string1 string2)
   (string-equal (remove-ws string1) (remove-ws string2)))
 
+(defun run-doctest (test-form expected-result expected-output output)
+  (let* ((test-form-signaled-condition 'NIL)
+	 (actual-output (make-array '(0) :element-type 'base-char :fill-pointer 0 :adjustable t))
+	 (actual-result (multiple-value-list
+			 (handler-case (with-output-to-string (*standard-output* actual-output)
+					 (eval test-form))
+			   (condition (co) (progn
+					     (setf test-form-signaled-condition t)
+					     co)))))
+	 (expected-output-matches-actual-output (if expected-output
+						    (string-equal-ignore-ws actual-output expected-output)
+						    T))
+	 (result T))
+    (if test-form-signaled-condition
+	(when (not (typep (car actual-result) (car expected-result)))
+	  (setf result 'NIL)
+	  (format output "~&~A signaled ~A, expected ~A.~%" test-form (car actual-result) (car expected-result)))
+	(unless (and (equal actual-result expected-result)
+		     expected-output-matches-actual-output)
+	  (setf result 'NIL)
+	  (if expected-output-matches-actual-output
+	      (format output "~&~A returned~{ ~A~}, expected~{ ~A~}.~%" test-form actual-result expected-result)
+	      (format output "~&~A printed \"~A\", expected \"~A\".~%" test-form actual-output expected-output))))
+    result))
+
 (defun run-doctests (docstring output)
   "Run-doctests is used by test-function and test-file to perform the actual
    work. It returns the number of tests failed and passed and prints to
    <output>."
 
-  ;; TODO: Needs refactoring! Break this up into two methods (at least), one for
-  ;; setting up/finding tests and one for executing them.
   (let ((tests-failed 0)
 	(tests-passed 0))
     (when docstring
@@ -53,45 +76,18 @@
 	(when (and (equal #\> c)
 		   (equal #\> (read-char docstring))
 		   (whitespace-p (peek-char nil docstring)))
-	  (let ((test-form-signaled-condition 'nil)
-		(test-form (read docstring)))
-	    (let ((expected-result (list (read docstring))))
-	      (let ((actual-output (make-array '(0)
-					       :element-type 'base-char
-					       :fill-pointer 0
-					       :adjustable t))
-		    (expected-output '()))
-		(when (and (symbolp (car expected-result))
-			   (equal (string (car expected-result)) "->"))
-		  (setf expected-output (read docstring))
-		  (setf expected-result (list (read docstring))))
+	  (let ((test-form (read docstring))
+		(expected-result (list (read docstring)))
+		(expected-output 'NIL))
+	    (when (and (symbolp (car expected-result))
+		       (equal (string (car expected-result)) "->"))
+	      (setf expected-output (read docstring))
+	      (setf expected-result (list (read docstring))))
+	    
+	    (if (run-doctest test-form expected-result expected-output output)
+		(incf tests-passed)
+		(incf tests-failed))))))
 
-		(let ((actual-result (multiple-value-list
-				      (handler-case (with-output-to-string (*standard-output* actual-output)
-						      (eval test-form))
-					(condition (co) (progn
-							  (setf test-form-signaled-condition t)
-							  co))))))
-		  (unless expected-output
-		    (setf actual-output '()))
-
-		  (let ((expected-output-matches-actual-output
-			 (string-equal-ignore-ws actual-output expected-output)))
-		    (if test-form-signaled-condition
-			(if (typep (car actual-result) (car expected-result))
-			    (incf tests-passed)
-			    (progn
-			      (incf tests-failed)
-			      (format output "~&~A signaled ~A, expected ~A.~%" test-form (car actual-result) (car expected-result))))
-			
-			(if (and (equal actual-result expected-result)
-				 expected-output-matches-actual-output)
-			    (incf tests-passed)
-			    (progn
-			      (incf tests-failed)
-			      (if expected-output-matches-actual-output
-				  (format output "~&~A returned~{ ~A~}, expected~{ ~A~}.~%" test-form actual-result expected-result)
-				  (format output "~&~A printed \"~A\", expected \"~A\".~%" test-form actual-output expected-output)))))))))))))
     (values tests-failed tests-passed)))
 
 (defun test-function (function &key (output nil))
