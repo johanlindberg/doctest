@@ -54,7 +54,7 @@
 	(when (not (typep (car actual-result) (car expected-result)))
 	  (setf result 'NIL)
 	  (format output "~&~A signaled ~A, expected ~A.~%" test-form (car actual-result) (car expected-result)))
-	(unless (and (equal actual-result expected-result)
+	(unless (and (equalp actual-result expected-result)
 		     expected-output-matches-actual-output)
 	  (setf result 'NIL)
 	  (if expected-output-matches-actual-output
@@ -198,8 +198,8 @@
    See also the documentation string for test-function."
 
     (multiple-value-bind (tests-failed tests-passed)
-	(with-open-file (docstring filename :direction :input)
-	  (run-doctests docstring output))
+        (with-open-file (docstring filename :direction :input)
+          (run-doctests docstring output))
       (print-results filename 'file output tests-failed tests-passed)))
 
 (defun print-results (test-name test-type output tests-failed tests-passed)
