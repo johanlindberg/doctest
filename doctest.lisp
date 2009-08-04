@@ -51,9 +51,10 @@
 						    T))
 	 (result T))
     (if test-form-signaled-condition
-	(when (not (typep (car actual-result) (car expected-result)))
-	  (setf result 'NIL)
-	  (format output "~&~A signaled ~A, expected ~A.~%" test-form (car actual-result) (car expected-result)))
+        (progn
+          (when (not (equalp (type-of (car actual-result)) (car expected-result)))
+            (setf result 'NIL)
+            (format output "~&~A signaled a ~A: ~A, expected ~A.~%" test-form (type-of (car actual-result)) (car actual-result) (car expected-result))))
 	(unless (and (equalp actual-result expected-result)
 		     expected-output-matches-actual-output)
 	  (setf result 'NIL)
