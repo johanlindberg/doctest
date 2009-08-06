@@ -51,8 +51,8 @@
 						    T))
 	 (result T))
     (if test-form-signaled-condition
-        (progn
-          (when (not (equalp (type-of (car actual-result)) (car expected-result)))
+        (when (not (equalp (type-of (car actual-result)) (car expected-result)))
+          (unless (subtypep (type-of (car actual-result)) 'warning)
             (setf result 'NIL)
             (format output "~&~A signaled a ~A: ~A, expected ~A.~%" test-form (type-of (car actual-result)) (car actual-result) (car expected-result))))
 	(unless (and (equalp actual-result expected-result)
