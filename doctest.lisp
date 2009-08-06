@@ -37,15 +37,15 @@
 (defun string-equal-ignore-ws (string1 string2)
   (string-equal (remove-ws string1) (remove-ws string2)))
 
-(defun run-doctest (test-form expected-result expected-output output)
+(defun run-doctest (test-form expected-result expected-output output count)
   (let* ((test-form-signaled-condition 'NIL)
 	 (actual-output (make-array '(0) :element-type 'base-char :fill-pointer 0 :adjustable t))
 	 (actual-result (multiple-value-list
 			 (handler-case (with-output-to-string (*standard-output* actual-output)
 					 (eval test-form))
-			   (condition (co) (progn
-					     (setf test-form-signaled-condition t)
-					     co)))))
+			   (error (co) (progn
+                                         (setf test-form-signaled-condition t)
+                                         co)))))
 	 (expected-output-matches-actual-output (if expected-output
 						    (string-equal-ignore-ws actual-output expected-output)
 						    T))
@@ -54,13 +54,13 @@
         (when (not (equalp (type-of (car actual-result)) (car expected-result)))
           (unless (subtypep (type-of (car actual-result)) 'warning)
             (setf result 'NIL)
-            (format output "~&~A signaled a ~A: ~A, expected ~A.~%" test-form (type-of (car actual-result)) (car actual-result) (car expected-result))))
+            (format output "~&[~A] ~A signaled a ~A: ~A, expected ~A.~%" count test-form (type-of (car actual-result)) (car actual-result) (car expected-result))))
 	(unless (and (equalp actual-result expected-result)
 		     expected-output-matches-actual-output)
 	  (setf result 'NIL)
 	  (if expected-output-matches-actual-output
-	      (format output "~&~A returned~{ ~A~}, expected~{ ~A~}.~%" test-form actual-result expected-result)
-	      (format output "~&~A printed \"~A\", expected \"~A\".~%" test-form actual-output expected-output))))
+	      (format output "~&[~A] ~A returned~{ ~A~}, expected~{ ~A~}.~%" count test-form actual-result expected-result)
+	      (format output "~&[~A] ~A printed \"~A\", expected \"~A\".~%" count test-form actual-output expected-output))))
     result))
 
 (defun run-doctests (docstring output)
@@ -69,7 +69,8 @@
    <output>."
 
   (let ((tests-failed 0)
-	(tests-passed 0))
+	(tests-passed 0)
+        (count 0))
     (when docstring
       (do ((c (read-char docstring)
 	      (read-char docstring nil 'EOF)))
@@ -85,7 +86,7 @@
 	      (setf expected-output (read docstring))
 	      (setf expected-result (list (read docstring))))
 	    
-	    (if (run-doctest test-form expected-result expected-output output)
+	    (if (run-doctest test-form expected-result expected-output output (incf count))
 		(incf tests-passed)
 		(incf tests-failed))))))
 
