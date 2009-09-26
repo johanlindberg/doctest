@@ -182,7 +182,7 @@
    NOTE! Whitespace is ignored when output is compared.
 
    >> (multiple-value-list (test-function #'sqr :output T))
-   -> |(SQR 2) printed \"2 * 2 = 4\", expected \"Blah blah blah\". Results for SQR (FUNCTION): 1 of 4 failed.|
+   -> |[4] (SQR 2) printed \"2 * 2 = 4\", expected \"Blah blah blah\". Results for SQR (FUNCTION): 1 of 4 failed.|
    (1 3)"
 
   (when (documentation function 'function)
