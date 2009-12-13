@@ -92,7 +92,7 @@
 
     (values tests-failed tests-passed)))
 
-(defun test-function (function &key (output nil))
+(defun test-function (function &key (output t))
   "Test-function extracts and tests code snippets embedded in the documentation
    string of <function>. It returns the number of tests failed and passed and
    prints a description to <output>.
@@ -192,7 +192,7 @@
 	    (run-doctests docstring output))
 	(print-results function-name 'function output tests-failed tests-passed)))))
 
-(defun test-file (filename &key (output nil))
+(defun test-file (filename &key (output t))
   "Test-file extracts and tests code snippets in the contents of <filename>. It
    returns the number of tests failed and passed and prints a description to
    <output>.
