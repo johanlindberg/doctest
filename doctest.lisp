@@ -128,7 +128,7 @@
    >> 1 ; NOTE! You can use comments to clarify!
    1
 
-   If you excpect more than one value you should wrap it in a multiple-value-
+   If you expect more than one value you should wrap it in a multiple-value-
    list to create one form.
 
    >> (multiple-value-list (values 1 2))
@@ -144,7 +144,7 @@
    >> (defun sqr (x)
         (* x x))
    SQR
-   >> (test #'sqr)
+   >> (doctest:test #'sqr)
    NIL
 
    If you need to test that a function signals a condition for certain inputs
@@ -166,7 +166,7 @@
 
    Testing sqr with test should now return 1 failed and 0 passed.
 
-   >> (multiple-value-list (test #'sqr))
+   >> (multiple-value-list (doctest:test #'sqr))
    (1 0)
 
    If you need to test the output of a function you can add an expected output
@@ -213,7 +213,7 @@
 
    NOTE! Whitespace is ignored when output is compared.
 
-   >> (multiple-value-list (test #'sqr :output T))
+   >> (multiple-value-list (doctest:test #'sqr :output T))
    -> |[4] (SQR 2) printed \"2 * 2 = 4\", expected \"Blah blah blah\".
        Results for SQR (FUNCTION): 1 of 4 failed.|
    (1 3)"
