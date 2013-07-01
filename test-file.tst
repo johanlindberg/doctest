@@ -1,0 +1,103 @@
+   Test extracts and tests code snippets embedded in the documentation string
+   of <thing>. It returns the number of tests failed and passed and prints a
+   description to <output>.
+
+   In order to have a code snippet evaluated as a doctest it must be preceded by
+   two '>' characters followed by whitespace. That combination will cause the
+   next form to be read and evaluated, and the next or the two next forms after
+   that to be read (but not evaluated).
+
+   Here is the simplest possible example:
+
+   >> 1 ; NOTE! You can use comments to clarify!
+   1
+
+   If you expect more than one value you should wrap it in a multiple-value-
+   list to create one form.
+
+   >> (multiple-value-list (values 1 2))
+   (1 2)
+
+   Newlines and other whitespace (including comments) doesn't particularly
+   matter. We could just as well have written >> (multiple-value-list (values 1
+   2)) (1 2) instead.
+
+   If you test a thing that doesn't have a documentation string, test will
+   return NIL.
+
+   >> (defun sqr (x)
+        (* x x))
+   SQR
+   >> (doctest:test #'sqr)
+   NIL
+
+   If you need to test that a function signals a condition for certain inputs
+   you can use the name of the condition as the expected return value.
+
+   >> (sqr 'x)
+   TYPE-ERROR
+
+   If we add a documentation string for sqr with a doctest, we can verify that
+   tests can fail as well.
+
+   >> (defun sqr (x)
+        "Returns <x> squared.
+
+         This test will fail:
+         >> (sqr 3) 3"
+        (* x x))
+   SQR
+
+   Testing sqr with test should now return 1 failed and 0 passed.
+
+   >> (multiple-value-list (doctest:test #'sqr))
+   (1 0)
+
+   If you need to test the output of a function you can add an expected output
+   form (written as -> <expected-output>) *between* the function call and the
+   return value. Expected output must be one form so you should either use a
+   string or wrap it in '|' characters.
+
+   >> (defun sqr (x)
+        "Prints <x> * <x> = <x*x> to standard output and returns NIL.
+
+         This test will pass,
+
+         >> (sqr 2)
+         -> |2 * 2 = 4|
+         NIL
+
+         as will this, because it ignores the output.
+
+         >> (sqr 2)
+         NIL
+
+         Perhaps surprisingly, this will pass as well,
+
+         >> (sqr 2) -> |2*2=4| NIL
+
+         the reason it passes even though it doesn't exactly match the
+         actual output is because the comparison is done after all
+         whitespace characters are removed.
+
+         This test will fail because expected output doesn't match the
+         actual output.
+
+         >> (sqr 2)
+         -> |Blah blah blah|
+         NIL"
+        (format t "~A * ~A = ~A" x x (* x x)))
+   SQR
+
+   Testing sqr with test should now return 1 failed and 2 passed. It should
+   also inform us that:
+
+   (SQR 2) printed "2 * 2 = 4", expected "Blah blah blah".
+   Results for SQR (FUNCTION): 1 of 4 failed.
+
+   NOTE! Whitespace is ignored when output is compared.
+
+   >> (multiple-value-list (doctest:test #'sqr :output T))
+   -> |[4] (SQR 2) printed "2 * 2 = 4", expected "Blah blah blah".
+       Results for SQR (FUNCTION): 1 of 4 failed.|
+   (1 3)
